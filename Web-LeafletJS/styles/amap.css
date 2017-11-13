@@ -1,0 +1,28 @@
+/*
+* @Author: SHLLL
+* @Date:   2017-10-30 16:27:46
+* @Last Modified by:   SHLLL
+* @Last Modified time: 2017-10-30 16:30:51
+*/
+
+/* 定义网页定位方式为绝对定位，边距为0 */
+html,
+body {
+    position: absolute;
+
+    width: 100%;
+    height: 100%;
+    margin: 0;
+}
+
+/* 定义地图显示容器大小为占满整个页面 */
+#mapid {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+}

@@ -1,0 +1,14 @@
+# 忽略Webstorm工程文件夹
+.idea/
+# 忽略Qt编译文件夹
+/Browser-Qt/build/
+# 忽略NodeJS模块文件夹
+/MapServer-NodeJS/package-lock.json
+/MapServer-NodeJS/node_modules/
+# 忽略HBuilder工程文件
+*.project
+# 忽略TernJS配置文件
+*.tern-project
+# 忽略Sublime工程文件
+*.sublime-project
+*.sublime-workspace
