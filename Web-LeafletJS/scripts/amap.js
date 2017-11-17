@@ -2,7 +2,7 @@
  * @Author: SHLLL
  * @Date:   2017-10-30 16:31:50
  * @Last Modified by:   SHLLL
- * @Last Modified time: 2017-11-12 23:17:38
+ * @Last Modified time: 2017-11-15 20:55:45
  */
 
 // 新建地图图层
@@ -12,7 +12,7 @@ var googleNormalMap = L.tileLayer.olineTileLayer('Google.Normal.Map', {
     minZoom: 3
 });
 var googleSatelliteMap = L.tileLayer.olineTileLayer('Google.Satellite.Map', {
-    maxZoom: 16,
+    maxZoom: 18,
     minZoom: 3
 });
 var googleHybridMap = L.tileLayer.olineTileLayer('Google.Hybrid.Map', {
