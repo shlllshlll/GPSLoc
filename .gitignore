@@ -1,0 +1,9 @@
+# 忽略工程文件
+/Browser-Qt/
+/MapServer-NodeJS/
+/Web-LeafletJS/
+# 忽略当前目录下的README.md文件
+/README.md
+# 忽略Sublime工程文件
+*.sublime-project
+*.sublime-workspace
