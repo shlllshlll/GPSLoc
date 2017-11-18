@@ -1,9 +1,5 @@
 # GPS轨迹重现离线地图服务器端
 
->关于我，欢迎关注  
-项目文档： [Gitbook](https://shlllshlll.gitbooks.io/gps-trajectory-reproduce/content/)  
-我的博客： [SHLLL的小站](http://shlll.me)
-
 这是一个NodeJS的离线地图服务器端程序
 ## 运行要求
 本程序依赖与Node.js以及Node.js的MySQL模块，并要求安装MySQL服务端。同时使用时需要自行修改程序中数据库连接参数配置。

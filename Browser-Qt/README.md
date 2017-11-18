@@ -1,10 +1,5 @@
 # GPS轨迹重现桌面客户端项目
 
->关于我，欢迎关注  
-项目文档： [Gitbook](https://shlllshlll.gitbooks.io/gps-trajectory-reproduce/content/)  
-我的博客： [SHLLL的小站](http://shlll.me)
-
-
 本项目基于Qt5.9.2实现了一个桌面客户端，用以在非浏览器环境中使用GPS轨迹重现的WEB版。
 
 ## 运行效果

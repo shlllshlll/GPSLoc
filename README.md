@@ -1,8 +1,9 @@
 # GPS轨迹重现项目
 
 >关于我，欢迎关注  
-项目文档： [Gitbook](https://shlllshlll.gitbooks.io/gps-trajectory-reproduce/content/)  
-我的博客： [SHLLL的小站](http://shlll.me)
+>项目文档： [Gitbook](https://shlllshlll.gitbooks.io/gpsloc_doc/)  [GithubPages](https://shlllshlll.github.io/GPSLoc_Doc)
+>我的博客： [SHLLL的小站](http://shlll.me)  
+>我的博客： [SHLLL's blog](https://shlllshlll.github.io/)
 
 
 本项目是电子信息系统综合设计中运动参数提取与轨迹重现实验的实现。这个项目包括以下几个子项目：
@@ -14,6 +15,10 @@
 ![项目效果展示](https://i.loli.net/2017/11/13/5a09648b66c54.gif "GPS轨迹重现效果")
 使用LeafletJS为基础，并全面扩展了LeafletJS的功能，实现了读取GPS数据并重现轨迹的功能。
 阅读项目[README.md](https://github.com/shlllshlll/GPSLoc/tree/master/Web-LeafletJS/README.md)以获取更多信息
+
+[在线演示地址1](http://shlll.me/amap/)
+
+[在线演示地址2](https://shlllshlll.github.io/GPSLoc)
 
 ## Browser-Qt
 ![项目效果展示](https://i.loli.net/2017/11/13/5a0967937a0a4.gif "GPS轨迹重现效果")
