@@ -12,3 +12,9 @@
 # 忽略Sublime工程文件
 *.sublime-project
 *.sublime-workspace
+# 忽略pipenv的虚拟环境
+.venv/
+# 忽略Pipfile.lock文件
+Pipfile.lock
+# 忽略python缓存文件
+__pycache__/

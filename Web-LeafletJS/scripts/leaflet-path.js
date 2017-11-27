@@ -2,7 +2,7 @@
  * @Author: SHLLL
  * @Date:   2017-11-04 20:38:20
  * @Last Modified by:   SHLLL
- * @Last Modified time: 2017-11-13 01:33:50
+ * @Last Modified time: 2017-11-27 01:51:24
  */
 
 // 这个地方定义了一个立即执行的匿名函数function(){}()
@@ -487,35 +487,108 @@
 
             var i = 0,
                 ctx = this._ctx;
+            var requestID,
+                isAnimationNextFrame = 0;
 
-            var intervalPoly = function() {
-                if (layer._curGroupNum < layer._groupArray.length) {
-                    this._panToNextGroup(layer, layer._curGroupNum);
-                    this._updatePolyOneGroup(layer, ctx, layer._curGroupNum++);
+            var drawAnimFramePoly = function() {
+                var lp, p;
+                var options = layer.options,
+                    groupNum = layer._curGroupNum;
+                var parts = layer._groupArray[groupNum].parts;
+
+                if (!layer._curGroupCount && !groupNum) {
+                    layer._curGroupCount++;
                 } else {
-                    window.clearInterval(this._interval1);
-                    this._interval1 = undefined;
+                    if (!layer._curGroupCount && groupNum) {
+                        var lastParts = layer._groupArray[groupNum - 1].parts;
+                        lp = lastParts[lastParts.length - 1];
+                    } else {
+                        lp = parts[layer._curGroupCount - 1];
+                    }
+                    ctx.beginPath();
+                    ctx.moveTo(lp.x, lp.y);
+                    p = parts[layer._curGroupCount++];
+                    ctx.lineTo(p.x, p.y);
+
+                    if (options.stroke && options.weight !== 0) {
+                        ctx.globalAlpha = options.opacity;
+                        ctx.lineWidth = options.weight;
+                        ctx.strokeStyle = layer._groupArray[groupNum].color;
+                        ctx.lineCap = options.lineCap;
+                        ctx.lineJoin = options.lineJoin;
+                        ctx.stroke();
+                    }
+
+                    if (layer._curGroupCount >= parts.length) {
+                        layer._curGroupCount = 0;
+                        layer._curGroupNum++;
+                        if (layer._curGroupNum >= layer._groupArray.length) {
+                            isAnimationNextFrame = 0;
+                        } else {
+                            this._panToNextGroup(layer, layer._curGroupNum);
+                        }
+                    }
+                }
+
+                // 请求下一帧动画
+                if (isAnimationNextFrame) {
+                    requestID = requestAnimationFrame(drawAnimFramePoly.bind(this));
+                } else {
+                    cancelAnimationFrame(requestID);
                     this.fire('pathdrawingend');
                 }
             };
-
+            // 重新绘制已绘制的部分
             for (i = 0; i < layer._curGroupNum; i++) {
-                this._updatePolyOneGroup(layer, ctx, i);
+                this._updatePolyOneGroup(layer, ctx, i, -1);
+            }
+            if (layer._curGroupNum < layer._groupArray.length) {
+                this._updatePolyOneGroup(layer, ctx, layer._curGroupNum, layer._curGroupCount + 1);
             }
 
+            // 如果开始巡航标志被置位
             if (this._polylineDrawing) {
                 this._polylineDrawing = false;
                 this.fire('pathdrawingbegin');
-                if (!this._interval1) {
-                    this._interval1 = window.setInterval(intervalPoly.bind(this), this._redrawTime);
-                }
+                isAnimationNextFrame = 1;
+                requestID = requestAnimationFrame(drawAnimFramePoly.bind(this));
             }
         },
+        // _updateMultiPoly: function(layer) {
+        //     if (!this._drawing) { return; }
 
-        _updatePolyOneGroup: function(layer, ctx, groupNum) {
+        //     var i = 0,
+        //         ctx = this._ctx;
+
+        //     var intervalPoly = function() {
+        //         if (layer._curGroupNum < layer._groupArray.length) {
+        //             this._panToNextGroup(layer, layer._curGroupNum);
+        //             this._updatePolyOneGroup(layer, ctx, layer._curGroupNum++, -1);
+        //         } else {
+        //             window.clearInterval(this._interval1);
+        //             this._interval1 = undefined;
+        //             this.fire('pathdrawingend');
+        //         }
+        //     };
+
+        //     for (i = 0; i < layer._curGroupNum; i++) {
+        //         this._updatePolyOneGroup(layer, ctx, i, -1);
+        //     }
+
+        //     if (this._polylineDrawing) {
+        //         this._polylineDrawing = false;
+        //         this.fire('pathdrawingbegin');
+        //         if (!this._interval1) {
+        //             this._interval1 = window.setInterval(intervalPoly.bind(this), this._redrawTime);
+        //         }
+        //     }
+        // },
+
+        _updatePolyOneGroup: function(layer, ctx, groupNum, curCount) {
+            var p;
             var options = layer.options;
             var parts = layer._groupArray[groupNum].parts;
-            var len = parts.length;
+            var len = (curCount == -1) ? parts.length : curCount;
             if (!len) {
                 return;
             }
@@ -721,11 +794,11 @@
 
             // @option weight: Number = 3
             // Stroke width in pixels
-            weight: 3,
+            weight: 5,
 
             // @option opacity: Number = 1.0
             // Stroke opacity
-            opacity: 1, // 定义透明度 1为完全不透明
+            opacity: 1.0, // 定义透明度 1为完全不透明
 
             // @option lineCap: String= 'round'
             // A string that defines [shape to be used at the end](https://developer.mozilla.org/docs/Web/SVG/Attribute/stroke-linecap) of the stroke.
@@ -851,6 +924,7 @@
             // 设置标志量开始巡航模式
             this._renderer._polylineDrawing = true;
             this._curGroupNum = 0;
+            this._curGroupCount = 0;
             if (!this.options.fitbounds) {
                 this._fitBeginZoom(this._map, this._bounds, this._latlngs[0]);
             } else {
@@ -985,8 +1059,6 @@
             var groupResult = [],
                 tempCount = 0,
                 averSpeed = 0,
-                minSpeed = 0,
-                maxSpeed = 0,
                 j = 0;
             i = 0;
             while (tempCount < latlngs.length) {
@@ -997,12 +1069,7 @@
                 if ((i >= groupSize) || (tempCount == latlngs.length)) {
                     this._groupArray[j] = {};
                     this._groupArray[j].speed = averSpeed / i;
-                    if (this._groupArray[j].speed > maxSpeed) {
-                        maxSpeed = this._groupArray[j].speed;
-                    }
-                    if (this._groupArray[j].speed < minSpeed) {
-                        minSpeed = this._groupArray[j].speed;
-                    }
+                    this._groupArray[j].color = this._setColor(this._groupArray[j].speed)
                     averSpeed = 0;
                     i = 0;
                     this._groupArray[j++].latlngs = groupResult;
@@ -1010,7 +1077,6 @@
                 }
             }
             this._curGroupNum = j;
-            this._setMultiColor(this._groupArray, minSpeed, maxSpeed);
         },
 
         _project: function() {
@@ -1096,13 +1162,31 @@
             // }
         },
         // 设置每段线的颜色函数
-        _setMultiColor: function(groupArray, minSpeed, maxSpeed) {
-            var i, j, absSpeed = maxSpeed - minSpeed;
+        _setColor: function(speed) {
+            var color;
 
-            for (i = 0; i < groupArray.length; i++) {
-                j = Math.floor((groupArray[i].speed - minSpeed) / absSpeed * 255);
-                groupArray[i].color = 'rgb({0},{1},0)'.format(255 - j, j);
+            // 颜色码表基于http://tool.oschina.net/commons?type=3
+            if (speed <= 20) {
+                color = '#FF0000'; // Red1
+            } else if (speed <= 40) {
+                color = '#FF4500'; // OrangeRed
+            } else if (speed <= 60) {
+                color = '#FF3030'; // Firebrick1
+            } else if (speed <= 80) {
+                color = '#FFA500'; // Orange1
+            } else if (speed <= 100) {
+                color = '#FFD700'; // Gold1
+            } else if (speed <= 120) {
+                color = '#FFFF00'; // Yellow1
+            } else if (speed <= 150) {
+                color = '#C0FF3E'; // OliveDrab1
+            } else if (speed <= 250) {
+                color = '#7FFF00'; // Chartreuse1
+            } else {
+                color = '#00FF00'; // Green1
             }
+
+            return color;
         },
 
         // simplify each clipped part of the polyline for performance

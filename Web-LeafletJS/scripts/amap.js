@@ -2,7 +2,7 @@
  * @Author: SHLLL
  * @Date:   2017-10-30 16:31:50
  * @Last Modified by:   SHLLL
- * @Last Modified time: 2017-11-15 20:55:45
+ * @Last Modified time: 2017-11-27 08:23:32
  */
 
 // 新建地图图层
@@ -20,7 +20,7 @@ var googleHybridMap = L.tileLayer.olineTileLayer('Google.Hybrid.Map', {
     minZoom: 3
 });
 // 创建离线地图图层
-var amapSatelliteOfflineMap = L.tileLayer('http://127.0.0.1:3001/1542757547/{z}/{x}/{y}',{
+var amapSatelliteOfflineMap = L.tileLayer('http://127.0.0.1:3001/47626774/{z}/{x}/{y}',{
     maxZoom: 16,
     minZoom: 3
 });
