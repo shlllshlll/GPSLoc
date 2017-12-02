@@ -2,7 +2,7 @@
  * @Author: SHLLL
  * @Date:   2017-10-30 16:31:50
  * @Last Modified by:   SHLLL
- * @Last Modified time: 2017-11-27 08:23:32
+ * @Last Modified time: 2017-12-01 14:45:40
  */
 
 // 新建地图图层
@@ -20,7 +20,7 @@ var googleHybridMap = L.tileLayer.olineTileLayer('Google.Hybrid.Map', {
     minZoom: 3
 });
 // 创建离线地图图层
-var amapSatelliteOfflineMap = L.tileLayer('http://127.0.0.1:3001/47626774/{z}/{x}/{y}',{
+var amapSatelliteOfflineMap = L.tileLayer('http://127.0.0.1:3001/47626774/{z}/{x}/{y}', {
     maxZoom: 16,
     minZoom: 3
 });
@@ -35,7 +35,7 @@ var baseLayers = {
 // 新建一个地图实例
 var map = L.map("mapid", {
     crs: L.CRS.GCJ02,
-    center: [30.657589, 104.065708],   // 天府广场GCJ-02坐标
+    center: [30.657589, 104.065708], // 天府广场GCJ-02坐标
     zoom: 16,
     layers: [googleSatelliteMap],
     attributionControl: false,
@@ -54,6 +54,13 @@ L.control.zoom({
 }).addTo(map);
 // 添加GPS输入文件到地图
 L.control.fileinput().addTo(map);
+
+// function mapPan(){
+//     map.panBy([20, 20], {animate: false});
+//     // var startPos = L.DomUtil.getPosition(map._mapPane);
+//     // var offset = L.point([20, 20]).round();
+// }
+// window.setInterval(mapPan, 1000);
 
 // 开启自动定位
 // map.locate({

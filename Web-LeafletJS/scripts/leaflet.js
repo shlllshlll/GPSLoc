@@ -1919,8 +1919,8 @@
 
     // @property retina: Boolean
     // `true` for browsers on a high-resolution "retina" screen.
-    var retina = (window.devicePixelRatio || (window.screen.deviceXDPI / window.screen.logicalXDPI)) > 1;
-
+    // var retina = (window.devicePixelRatio || (window.screen.deviceXDPI / window.screen.logicalXDPI)) > 1;
+    var retina = (window.screen.deviceXDPI / window.screen.logicalXDPI) > 1;
 
     // @property canvas: Boolean
     // `true` when the browser supports [`<canvas>`](https://developer.mozilla.org/docs/Web/API/Canvas_API).
@@ -13679,4 +13679,3 @@
     exports.map = createMap;
 
 })));
-//# sourceMappingURL=leaflet-src.js.map

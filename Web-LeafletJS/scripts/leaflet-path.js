@@ -2,7 +2,7 @@
  * @Author: SHLLL
  * @Date:   2017-11-04 20:38:20
  * @Last Modified by:   SHLLL
- * @Last Modified time: 2017-11-27 01:51:24
+ * @Last Modified time: 2017-12-02 00:50:52
  */
 
 // 这个地方定义了一个立即执行的匿名函数function(){}()
@@ -31,6 +31,11 @@
 
         //replace()中的正则加变量必须转换，否则使用new RegExp()创建； /\{' + i + '\}/g只能解析为｛0｝，而不是字符串'{0}';
         return result;
+    };
+
+    // 取消默认的右键菜单
+    document.oncontextmenu = function(){
+    　　return false;
     };
 
     // 定义Bounds对象clone方法创建一个当前bounds的克隆对象
@@ -270,6 +275,7 @@
 
             // Redraw vectors since canvas is cleared upon removal,
             // in case of removing the renderer itself from the map.
+            this._dataQueue = [];
             this._draw();
         },
 
@@ -481,19 +487,70 @@
             this._ctx.restore(); // Restore state before clipping.
         },
 
+        _getAngle: function(px, py, mx, my) { //获得人物中心和鼠标坐标连线，与y轴正半轴之间的夹角
+            var x = Math.abs(px - mx);
+            var y = Math.abs(py - my);
+            var z = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+            var cos = y / z;
+            var radina = Math.acos(cos); //用反三角函数求弧度
+            var angle = Math.floor(180 / (Math.PI / radina)); //将弧度转换成角度
+
+            if (mx > px && my > py) { //鼠标在第四象限
+                angle = 180 - angle;
+            }
+
+            if (mx == px && my > py) { //鼠标在y轴负方向上
+                angle = 180;
+            }
+
+            if (mx > px && my == py) { //鼠标在x轴正方向上
+                angle = 90;
+            }
+
+            if (mx < px && my > py) { //鼠标在第三象限
+                angle = 180 + angle;
+            }
+
+            if (mx < px && my == py) { //鼠标在x轴负方向
+                angle = 270;
+            }
+
+            if (mx < px && my < py) { //鼠标在第二象限
+                angle = 360 - angle;
+            }
+
+            return angle;
+        },
+
+        _dataFilter: function(data) {
+            if (!isNaN(data)) {
+                this._dataQueue.push(data);
+            }
+            if (this._dataQueue.length > 10) {
+                this._dataQueue.shift();
+            }
+
+            var sum = 0;
+
+            for (var i = 0; i < this._dataQueue.length; i++) {
+                sum += this._dataQueue[i];
+            }
+            sum /= this._dataQueue.length;
+
+            return sum;
+        },
+
         // 画MutiPoly的核心方法
         _updateMultiPoly: function(layer) {
             if (!this._drawing) { return; }
 
             var i = 0,
                 ctx = this._ctx;
-            var requestID,
-                isAnimationNextFrame = 0;
 
             var drawAnimFramePoly = function() {
                 var lp, p;
-                var options = layer.options,
-                    groupNum = layer._curGroupNum;
+                // var options = layer.options;
+                var groupNum = layer._curGroupNum;
                 var parts = layer._groupArray[groupNum].parts;
 
                 if (!layer._curGroupCount && !groupNum) {
@@ -505,84 +562,57 @@
                     } else {
                         lp = parts[layer._curGroupCount - 1];
                     }
-                    ctx.beginPath();
-                    ctx.moveTo(lp.x, lp.y);
                     p = parts[layer._curGroupCount++];
-                    ctx.lineTo(p.x, p.y);
-
-                    if (options.stroke && options.weight !== 0) {
-                        ctx.globalAlpha = options.opacity;
-                        ctx.lineWidth = options.weight;
-                        ctx.strokeStyle = layer._groupArray[groupNum].color;
-                        ctx.lineCap = options.lineCap;
-                        ctx.lineJoin = options.lineJoin;
-                        ctx.stroke();
-                    }
+                    this._curAngle = this._dataFilter(this._getAngle(lp.x, lp.y, p.x, p.y));
+                    this._curPoint = p;
+                    this._curColor = layer._groupArray[groupNum].color;
+                    var offset = L.point([p.x - lp.x, p.y - lp.y]);
+                    map.panBy(offset, { animate: false });
 
                     if (layer._curGroupCount >= parts.length) {
                         layer._curGroupCount = 0;
                         layer._curGroupNum++;
                         if (layer._curGroupNum >= layer._groupArray.length) {
-                            isAnimationNextFrame = 0;
-                        } else {
-                            this._panToNextGroup(layer, layer._curGroupNum);
+                            this._isAnimationNextFrame = false;
                         }
                     }
                 }
 
                 // 请求下一帧动画
-                if (isAnimationNextFrame) {
-                    requestID = requestAnimationFrame(drawAnimFramePoly.bind(this));
+                if (this._isAnimationNextFrame) {
+                    this._requestID = requestAnimationFrame(drawAnimFramePoly.bind(this));
                 } else {
-                    cancelAnimationFrame(requestID);
+                    cancelAnimationFrame(this._requestID);
                     this.fire('pathdrawingend');
+                    this._curPoint = undefined;
                 }
             };
+            if (this._curPoint) {
+                ctx.save();
+                ctx.translate(this._curPoint.x, this._curPoint.y);
+                ctx.rotate(this._curAngle * Math.PI / 180);
+                ctx.translate(-12, -20);
+                ctx.scale(0.3, 0.3);
+                this._drawCruise(ctx, this._curColor);
+                ctx.restore();
+            }
             // 重新绘制已绘制的部分
             for (i = 0; i < layer._curGroupNum; i++) {
                 this._updatePolyOneGroup(layer, ctx, i, -1);
             }
-            if (layer._curGroupNum < layer._groupArray.length) {
-                this._updatePolyOneGroup(layer, ctx, layer._curGroupNum, layer._curGroupCount + 1);
+            if (layer._curGroupCount && (layer._curGroupNum < layer._groupArray.length)) {
+                this._updatePolyOneGroup(layer, ctx, layer._curGroupNum, layer._curGroupCount);
             }
+
 
             // 如果开始巡航标志被置位
             if (this._polylineDrawing) {
                 this._polylineDrawing = false;
                 this.fire('pathdrawingbegin');
-                isAnimationNextFrame = 1;
-                requestID = requestAnimationFrame(drawAnimFramePoly.bind(this));
+                this._isAnimationNextFrame = true;
+                this._requestID = requestAnimationFrame(drawAnimFramePoly.bind(this));
             }
         },
-        // _updateMultiPoly: function(layer) {
-        //     if (!this._drawing) { return; }
-
-        //     var i = 0,
-        //         ctx = this._ctx;
-
-        //     var intervalPoly = function() {
-        //         if (layer._curGroupNum < layer._groupArray.length) {
-        //             this._panToNextGroup(layer, layer._curGroupNum);
-        //             this._updatePolyOneGroup(layer, ctx, layer._curGroupNum++, -1);
-        //         } else {
-        //             window.clearInterval(this._interval1);
-        //             this._interval1 = undefined;
-        //             this.fire('pathdrawingend');
-        //         }
-        //     };
-
-        //     for (i = 0; i < layer._curGroupNum; i++) {
-        //         this._updatePolyOneGroup(layer, ctx, i, -1);
-        //     }
-
-        //     if (this._polylineDrawing) {
-        //         this._polylineDrawing = false;
-        //         this.fire('pathdrawingbegin');
-        //         if (!this._interval1) {
-        //             this._interval1 = window.setInterval(intervalPoly.bind(this), this._redrawTime);
-        //         }
-        //     }
-        // },
 
         _updatePolyOneGroup: function(layer, ctx, groupNum, curCount) {
             var p;
@@ -613,41 +643,35 @@
             }
         },
 
-        _panToNextGroup: function(layer, curGroup) {
-            var offsetX, offsetY,
-                paddingX = 0.2 * (this._bounds.max.x - this._bounds.min.x),
-                paddingY = 0.2 * (this._bounds.max.y - this._bounds.min.y);
-
-            if (++curGroup === layer._groupArray.length) {
-                return;
-            }
-
-            var bounds = layer._groupArray[curGroup].pxBounds.clone();
-            bounds.min.x -= paddingX;
-            bounds.min.y -= paddingY;
-            bounds.max.x += paddingX;
-            bounds.max.y += paddingY;
-
-            if (bounds.max.x > this._bounds.max.x) {
-                offsetX = bounds.max.x - this._bounds.max.x;
-            } else if (bounds.min.x < this._bounds.min.x) {
-                offsetX = bounds.min.x - this._bounds.min.x;
-            } else {
-                offsetX = 0;
-            }
-
-            if (bounds.max.y > this._bounds.max.y) {
-                offsetY = bounds.max.y - this._bounds.max.y;
-            } else if (bounds.min.y < this._bounds.min.y) {
-                offsetY = bounds.min.y - this._bounds.min.y;
-            } else {
-                offsetY = 0;
-            }
-
-            if ((offsetX === 0) && (offsetY === 0)) {
-                return;
-            }
-            this._map.panBy([offsetX, offsetY]);
+        _drawCruise: function(ctx, color) {
+            ctx.save();
+            ctx.strokeStyle = "rgba(0,0,0,0)";
+            ctx.miterLimit = 4;
+            ctx.font = "normal normal 400 normal 15px / 21.4286px ''";
+            ctx.font = "   15px ";
+            ctx.scale(0.4, 0.4);
+            ctx.scale(0.1953125, 0.1953125);
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.font = "   15px ";
+            ctx.beginPath();
+            ctx.moveTo(512.030699, 2.118244);
+            ctx.bezierCurveTo(482.132762, 2.118244, 455.19115600000003, 19.501146000000002, 443.48658, 46.328142);
+            ctx.lineTo(62.697971, 920.890644);
+            ctx.bezierCurveTo(49.836035, 950.3823289999999, 58.353013000000004, 984.6262469999999, 83.615373, 1005.079068);
+            ctx.bezierCurveTo(97.347119, 1016.20343, 114.26646400000001, 1021.881756, 131.243113, 1021.881756);
+            ctx.bezierCurveTo(145.496745, 1021.881756, 159.86498699999999, 1017.883699, 172.381046, 1009.772974);
+            ctx.lineTo(520.664334, 784.3815969999999);
+            ctx.lineTo(850.174046, 1008.78753);
+            ctx.bezierCurveTo(863.037005, 1017.535775, 877.9281569999999, 1021.881756, 892.818285, 1021.881756);
+            ctx.bezierCurveTo(909.447011, 1021.881756, 926.075736, 1016.43572, 939.692872, 1005.65826);
+            ctx.bezierCurveTo(965.477118, 985.262744, 974.283691, 950.672948, 961.304076, 920.8916670000001);
+            ctx.lineTo(580.575842, 46.329165);
+            ctx.bezierCurveTo(568.871265, 19.50217, 541.870308, 2.118244, 512.030699, 2.118244);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+            ctx.restore();
         },
 
         // Canvas obviously doesn't have mouse events for individual drawn objects,
@@ -1018,9 +1042,15 @@
             var targetZoom = targetBounds.zoom;
             var targetCenter = targetBounds.center;
             var maxZoom = map.getMaxZoom();
-            (maxZoom > targetZoom + 1) ? map.setView(center, targetZoom + 2):
-                ((maxZoom > targetZoom) ? map.setView(center, targetZoom + 1) :
-                    map.setView(targetCenter, targetZoom));
+            if (maxZoom > targetZoom + 2) {
+                targetZoom += 3;
+            } else if (maxZoom > targetZoom + 1) {
+                targetZoom += 2;
+            } else if (maxZoom > targetZoom) {
+                targetZoom += 1;
+            }
+
+            map.setView(center, targetZoom);
         },
 
         // @method addLatLng(latlng: LatLng, latlngs? LatLng[]): this
@@ -1063,13 +1093,12 @@
             i = 0;
             while (tempCount < latlngs.length) {
                 this._bounds.extend(latlngs[tempCount]);
-                // console.log(speeds[tempCount]);
                 averSpeed += speeds[tempCount];
                 groupResult[i++] = latlngs[tempCount++];
                 if ((i >= groupSize) || (tempCount == latlngs.length)) {
                     this._groupArray[j] = {};
                     this._groupArray[j].speed = averSpeed / i;
-                    this._groupArray[j].color = this._setColor(this._groupArray[j].speed)
+                    this._groupArray[j].color = this._setColor(this._groupArray[j].speed);
                     averSpeed = 0;
                     i = 0;
                     this._groupArray[j++].latlngs = groupResult;
@@ -1251,25 +1280,15 @@
         },
         onAdd: function(map) {
             this._map = map;
-            var div = L.DomUtil.create('div', 'leaflet-bar');
-            div.style.overflow = 'hidden';
+            var div = L.DomUtil.create('div', 'leaflet-navigate leaflet-bar enable');
             var a = L.DomUtil.create('a', null, div);
             a.setAttribute('role', 'button');
             a.setAttribute('title', this.options.inputTitle);
             a.setAttribute('aria-label', this.options.inputTitle);
             a.setAttribute('href', '#');
-            a.style.backgroundImage = 'url("images/navi.svg")';
-            a.style.backgroundPosition = 'center';
-            a.style.backgroundSize = '80%';
             var input = L.DomUtil.create('input', null, div);
             input.setAttribute('type', 'file');
             input.setAttribute('accept', '.txt');
-            input.style.position = 'absolute';
-            input.style.opacity = '0';
-            input.style.top = '0';
-            input.style.right = '0';
-            input.style.fontSize = '25px';
-            input.style.cursor = 'pointer';
             this._inputDiv = div;
             this._inputButton = a;
             this._inputElement = input; // 将文件输入控件保存到当前对象中
@@ -1284,10 +1303,11 @@
             var input = this._inputElement;
             var a = this._inputButton;
             var map = this._map;
+            var div =this._inputDiv;
 
-            a.style.backgroundColor = '';
-            a.style.backgroundImage = 'url("images/navi.svg")';
-            input.style.cursor = 'pointer';
+            div.classList.remove('disable');
+            div.classList.add('enable');
+
             input.removeAttribute('disabled', 'disabled');
 
             if (this._markerEnd) {
@@ -1305,30 +1325,16 @@
                     })
                 }).addTo(map);
             }
-
-            // if (map.boxZoom)
-            //     map.boxZoom.enable();
-            // if (map.doubleClickZoom)
-            //     map.doubleClickZoom.enable();
-            // if (map.dragging)
-            //     map.dragging.enable();
-            // if (map.keyboard)
-            //     map.keyboard.enable();
-            // if (map.scrollWheelZoom)
-            //     map.scrollWheelZoom.enable();
-            // if (map.tap)
-            //     map.tap.enable();
-            // if (map.touchZoom)
-            //     map.touchZoom.enable();
         },
         _setDisable: function() {
             var input = this._inputElement;
             var a = this._inputButton;
             var map = this._map;
+            var div =this._inputDiv;
 
-            a.style.backgroundColor = '#f4f4f4';
-            a.style.backgroundImage = 'url("images/navi-disable.svg")';
-            input.style.cursor = 'default';
+            div.classList.remove('enable');
+            div.classList.add('disable');
+
             input.setAttribute('disabled', 'disabled');
 
             if (this._markerEnd) {
@@ -1349,21 +1355,6 @@
                     })
                 }).addTo(map);
             }
-
-            // if (map.boxZoom)
-            //     map.boxZoom.disable();
-            // if (map.doubleClickZoom)
-            //     map.doubleClickZoom.disable();
-            // if (map.dragging)
-            //     map.dragging.disable();
-            // if (map.keyboard)
-            //     map.keyboard.disable();
-            // if (map.scrollWheelZoom)
-            //     map.scrollWheelZoom.disable();
-            // if (map.tap)
-            //     map.tap.disable();
-            // if (map.touchZoom)
-            //     map.touchZoom.disable();
         },
         _fileReader: function() {
             var map = this._map;
@@ -1382,7 +1373,6 @@
                 for (var i = 0; i < GPSDataArray.length; i++) {
                     // 查找以$GPGGA开头的数据行
                     if (GPSDataArray[i].search("GPRMC") != -1) {
-                        // console.log(GPSDataArray[i]);
                         var GPSLocateArray = GPSDataArray[i].split(",");
                         if ((GPSLocateArray[2] != 'A') || (!GPSLocateArray[3]) || (!GPSLocateArray[5])) {
                             continue;

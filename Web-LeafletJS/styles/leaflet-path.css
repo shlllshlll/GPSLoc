@@ -1,0 +1,39 @@
+/*
+* @Author: SHLLL
+* @Date:   2017-12-02 00:10:23
+* @Last Modified by:   SHLLL
+* @Last Modified time: 2017-12-02 00:50:30
+*/
+
+.leaflet-navigate {
+	overflow: hidden;
+}
+.leaflet-navigate a{
+	background-position: center;
+	background-size: 80%;
+}
+
+.leaflet-navigate input {
+	position: absolute;
+	opacity: 0;
+	top: 0;
+	right: 0;
+	font-size: 25px;
+}
+
+.leaflet-navigate.enable a {
+	background-image: url(../images/navi.svg);
+}
+
+.leaflet-navigate.enable input {
+	cursor: pointer;
+}
+
+.leaflet-navigate.disable a {
+	background-color: #f4f4f4;
+	background-image: url(../images/navi-disable.svg);
+}
+
+.leaflet-navigate.disable input {
+	cursor: default;
+}
