@@ -2,7 +2,7 @@
  * @Author: SHLLL
  * @Date:   2017-10-30 16:31:50
  * @Last Modified by:   SHLLL
- * @Last Modified time: 2017-12-01 14:45:40
+ * @Last Modified time: 2017-12-04 00:08:04
  */
 
 // 新建地图图层
@@ -29,7 +29,7 @@ var baseLayers = {
     "谷歌地图": googleNormalMap,
     "谷歌卫星": googleSatelliteMap,
     "谷歌混合": googleHybridMap,
-    "高德卫星离线": amapSatelliteOfflineMap
+    "谷歌离线": amapSatelliteOfflineMap
 };
 
 // 新建一个地图实例

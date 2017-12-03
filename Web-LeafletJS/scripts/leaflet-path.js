@@ -2,7 +2,7 @@
  * @Author: SHLLL
  * @Date:   2017-11-04 20:38:20
  * @Last Modified by:   SHLLL
- * @Last Modified time: 2017-12-02 00:50:52
+ * @Last Modified time: 2017-12-03 23:18:59
  */
 
 // 这个地方定义了一个立即执行的匿名函数function(){}()
@@ -34,8 +34,8 @@
     };
 
     // 取消默认的右键菜单
-    document.oncontextmenu = function(){
-    　　return false;
+    document.oncontextmenu = function() {　　
+        return false;
     };
 
     // 定义Bounds对象clone方法创建一个当前bounds的克隆对象
@@ -276,7 +276,18 @@
             // Redraw vectors since canvas is cleared upon removal,
             // in case of removing the renderer itself from the map.
             this._dataQueue = [];
+            this.on('run', this._runDrawing, this);
+            this.on('pause', this._pauseDrawing, this);
             this._draw();
+        },
+
+        _runDrawing: function() {
+            this._polylineDrawing = true;
+            this._updatePaths();
+        },
+
+        _pauseDrawing: function() {
+            cancelAnimationFrame(this._requestID);
         },
 
         _initContainer: function() {
@@ -562,20 +573,21 @@
                     } else {
                         lp = parts[layer._curGroupCount - 1];
                     }
+                    this._curPointPos = [groupNum, layer._curGroupCount];
                     p = parts[layer._curGroupCount++];
                     this._curAngle = this._dataFilter(this._getAngle(lp.x, lp.y, p.x, p.y));
-                    this._curPoint = p;
                     this._curColor = layer._groupArray[groupNum].color;
                     var offset = L.point([p.x - lp.x, p.y - lp.y]);
-                    map.panBy(offset, { animate: false });
 
                     if (layer._curGroupCount >= parts.length) {
                         layer._curGroupCount = 0;
                         layer._curGroupNum++;
                         if (layer._curGroupNum >= layer._groupArray.length) {
                             this._isAnimationNextFrame = false;
+                            this._curPointPos = undefined;
                         }
                     }
+                    map.panBy(offset, { animate: false });
                 }
 
                 // 请求下一帧动画
@@ -584,12 +596,12 @@
                 } else {
                     cancelAnimationFrame(this._requestID);
                     this.fire('pathdrawingend');
-                    this._curPoint = undefined;
                 }
             };
-            if (this._curPoint) {
+            if (this._curPointPos) {
+                var tp = layer._groupArray[this._curPointPos[0]].parts[this._curPointPos[1]];
                 ctx.save();
-                ctx.translate(this._curPoint.x, this._curPoint.y);
+                ctx.translate(tp.x, tp.y);
                 ctx.rotate(this._curAngle * Math.PI / 180);
                 ctx.translate(-12, -20);
                 ctx.scale(0.3, 0.3);
@@ -1280,7 +1292,8 @@
         },
         onAdd: function(map) {
             this._map = map;
-            var div = L.DomUtil.create('div', 'leaflet-navigate leaflet-bar enable');
+            var parDiv = L.DomUtil.create('div', 'leaflet-navigate-section');
+            var div = L.DomUtil.create('div', 'leaflet-navigate-toolbar leaflet-bar enable', parDiv);
             var a = L.DomUtil.create('a', null, div);
             a.setAttribute('role', 'button');
             a.setAttribute('title', this.options.inputTitle);
@@ -1289,6 +1302,7 @@
             var input = L.DomUtil.create('input', null, div);
             input.setAttribute('type', 'file');
             input.setAttribute('accept', '.txt');
+            this._createActionDom(parDiv);
             this._inputDiv = div;
             this._inputButton = a;
             this._inputElement = input; // 将文件输入控件保存到当前对象中
@@ -1296,19 +1310,77 @@
             // 添加DOM事件监听器
             L.DomEvent.on(input, 'change', this._fileReader, this);
 
-            return div;
+            return parDiv;
         },
         onRemove: function(map) {},
+        _createActionDom: function(parentDiv) {
+            var actionUl = L.DomUtil.create('ul', 'leaflet-navigate-actions', parentDiv);
+            var actionLi = L.DomUtil.create('li', null, actionUl);
+            var actionA = L.DomUtil.create('a', null, actionLi);
+            var textNode = document.createTextNode('❚❚');
+            actionUl.style.display = 'none';
+            actionA.appendChild(textNode);
+            actionA.setAttribute('href', '#');
+            actionA.setAttribute('title', '暂停');
+            this._actionRunning = true;
+            this._actionUl = actionUl;
+            this._actionA = actionA;
+            this._actionText = textNode;
+            L.DomEvent.on(actionA, 'click', this._actionCallback, this);
+        },
+
+        _setActionVisible: function(visibled) {
+            if (visibled) {
+                this._actionUl.style.display = 'inline';
+            } else {
+                this._actionUl.style.display = 'none';
+            }
+        },
+
+        _setActionRun: function(running) {
+            if (running) {
+                this._actionText.nodeValue = '►';
+                this._actionA.setAttribute('title', '继续');
+            } else {
+                this._actionText.nodeValue = '❚❚';
+                this._actionA.setAttribute('title', '暂停');
+            }
+        },
+
+        _actionCallback: function() {
+            var div = this._inputDiv;
+            var input = this._inputElement;
+
+            if (this._actionRunning === false) {
+                this._setActionRun(false);
+                this._renderer.fire('run');
+                this._actionRunning = true;
+                div.classList.remove('enable');
+                div.classList.add('disable');
+                input.setAttribute('disabled', 'disabled');
+            } else {
+                div.classList.remove('disable');
+                div.classList.add('enable');
+                input.removeAttribute('disabled', 'disabled');
+                this._setActionRun(true);
+                this._renderer.fire('pause');
+                this._actionRunning = false;
+            }
+        },
+
         _setEnable: function() {
             var input = this._inputElement;
             var a = this._inputButton;
             var map = this._map;
-            var div =this._inputDiv;
+            var div = this._inputDiv;
 
             div.classList.remove('disable');
             div.classList.add('enable');
 
             input.removeAttribute('disabled', 'disabled');
+
+            this._setActionVisible(false);
+            this._setActionRun(false);
 
             if (this._markerEnd) {
                 this._markerEnd.setOpacity(1);
@@ -1330,12 +1402,14 @@
             var input = this._inputElement;
             var a = this._inputButton;
             var map = this._map;
-            var div =this._inputDiv;
+            var div = this._inputDiv;
 
             div.classList.remove('enable');
             div.classList.add('disable');
 
             input.setAttribute('disabled', 'disabled');
+
+            this._setActionVisible(true);
 
             if (this._markerEnd) {
                 this._markerEnd.setOpacity(0);

@@ -2,11 +2,10 @@
 * @Author: SHLLL
 * @Date:   2017-10-30 16:27:46
 * @Last Modified by:   SHLLL
-* @Last Modified time: 2017-10-30 16:30:51
+* @Last Modified time: 2017-12-03 20:23:44
 */
 
 /* 定义网页定位方式为绝对定位，边距为0 */
-html,
 body {
     position: absolute;
 

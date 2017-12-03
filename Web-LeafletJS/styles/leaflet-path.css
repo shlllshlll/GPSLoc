@@ -2,38 +2,85 @@
 * @Author: SHLLL
 * @Date:   2017-12-02 00:10:23
 * @Last Modified by:   SHLLL
-* @Last Modified time: 2017-12-02 00:50:30
+* @Last Modified time: 2017-12-03 23:03:30
 */
 
-.leaflet-navigate {
-	overflow: hidden;
-}
-.leaflet-navigate a{
-	background-position: center;
-	background-size: 80%;
+/*.leaflet-draw-section {
+    position: relative;
+}*/
+
+.leaflet-navigate-toolbar {
+    overflow: hidden;
 }
 
-.leaflet-navigate input {
-	position: absolute;
-	opacity: 0;
-	top: 0;
-	right: 0;
-	font-size: 25px;
+.leaflet-navigate-toolbar a {
+    background-position: center;
+    background-size: 80%;
 }
 
-.leaflet-navigate.enable a {
-	background-image: url(../images/navi.svg);
+.leaflet-navigate-toolbar input {
+    font-size: 25px;
+
+    position: absolute;
+    top: 0;
+    right: 0;
+
+    opacity: 0;
 }
 
-.leaflet-navigate.enable input {
-	cursor: pointer;
+.leaflet-navigate-toolbar.enable>a {
+    background-image: url(../images/navi.svg);
 }
 
-.leaflet-navigate.disable a {
-	background-color: #f4f4f4;
-	background-image: url(../images/navi-disable.svg);
+.leaflet-navigate-toolbar.enable input {
+    cursor: pointer;
 }
 
-.leaflet-navigate.disable input {
-	cursor: default;
+.leaflet-navigate-toolbar.disable>a {
+    background-color: #f4f4f4;
+    background-image: url(../images/navi-disable.svg);
+}
+
+.leaflet-navigate-toolbar.disable input {
+    cursor: default;
+}
+
+.leaflet-navigate-actions {
+    position: absolute;
+    top: 2px;
+    left: 31px;
+
+    margin: 0;
+    padding: 0;
+
+    list-style-type: none;
+
+    white-space: nowrap;
+}
+
+.leaflet-navigate-actions li {
+    display: inline-block;
+}
+
+.leaflet-navigate-actions a {
+    font-size: 12px;
+    line-height: 30px;
+
+    display: block;
+
+    height: 30px;
+    padding-right: 10px;
+    padding-left: 10px;
+
+    text-align: center;
+    text-decoration: none;
+
+    color: #fff;
+    border-left: none;
+    border-radius: 0 4px 4px 0;
+    background-color: #919187;
+}
+
+.leaflet-navigate-actions a:hover {
+	background-color: #A0A098;
 }
