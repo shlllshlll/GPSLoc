@@ -2,7 +2,7 @@
  * @Author: SHLLL
  * @Date:   2017-11-04 20:38:20
  * @Last Modified by:   SHLLL
- * @Last Modified time: 2017-12-03 23:18:59
+ * @Last Modified time: 2017-12-11 00:28:10
  */
 
 // 这个地方定义了一个立即执行的匿名函数function(){}()
@@ -1368,6 +1368,11 @@
             }
         },
 
+        _actionReset: function() {
+            this._setActionRun(false);
+            this._actionRunning = true;
+        },
+
         _setEnable: function() {
             var input = this._inputElement;
             var a = this._inputButton;
@@ -1474,6 +1479,7 @@
                     this._renderer.on('pathdrawingend', this._setEnable, this);
                     this._renderer.on('pathdrawingbegin', this._setDisable, this);
                 }
+                this._actionReset();
                 this._multiPolyline.beginCruise(); // 触发一次巡航
             }.bind(this);
         },
